@@ -1,0 +1,50 @@
+---
+# tasks file for phpldapadmin
+- name: "Install phpLDAPadmin"
+  import_tasks: "pla-install.yml"
+  tags: pla
+
+- name: "Be sure to load a basic configuration of phpLDAPadmin"
+  template:
+   src: "config/config.php.j2"
+   dest: "/opt/phpldapadmin/config/config.php"
+   owner: "root"
+   group: "www-data"
+  notify:
+   - "Restart Apache"
+  changed_when: False
+  tags: pla
+
+- name: "Be sure to configure '{{ pla['web_gui_user'] }}' user for phpLDAPadmin"
+  htpasswd:
+   path: "/etc/apache2/htpasswd"
+   name: "{{ pla['web_gui_user'] }}"
+   password: "{{ pla['web_gui_pw'] }}"
+   owner: "root"
+   group: "root"
+   mode: 0644
+  tags: pla
+
+- name: "Be sure to change '/phpldapadmin' into '/idm' to prevent random login attempts"
+  copy:
+   src: "files/apache2/conf-enabled/phpldapadmin.conf"
+   dest: "/etc/apache2/conf-enabled/phpldapadmin.conf"
+  notify:
+   - "Restart Apache"
+  tags: pla
+
+- name: "Be sure to load logo and apache2 configuration files of phpLDAPadmin"
+  copy:
+   src: "{{ item.src }}"
+   dest: "{{ item.dest }}"
+   owner: "root"
+   group: "root"
+   mode: "0644"
+  with_items:
+   - { src: "files/apache2/conf-enabled/idm.conf", dest: "/etc/apache2/conf-enabled/idm.conf"  }
+   - { src: "files/restore/{{ fqdn }}/images/logo.png", dest: "/opt/phpldapadmin/htdocs/images/default/logo-small.png" }
+   - { src: "files/restore/{{ fqdn }}/images/favicon.png", dest: "/opt/phpldapadmin/htdocs/images/favicon.ico" }
+  notify:
+   - "Restart Apache"
+  changed_when: False
+  tags: pla

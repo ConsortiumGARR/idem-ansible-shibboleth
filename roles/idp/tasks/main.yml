@@ -1,0 +1,49 @@
+---
+# tasks file for idp
+- name: "Include OS-specific variables."
+  include_vars: "{{ ansible_os_family }}.yml"
+  tags: idp
+
+- name: "Include attribute resolver default dictionary if a custom one is not provided on the host_vars of IdP"
+  include_vars:
+   file: "attr-defs-dict-java{{ jdk_version }}.yml"
+  when: idp_attrDef is undefined or idp_attrDef == ""
+  tags: idp
+
+- name: "Include static attributes vars if custom one is not provided on host_vars of IdP"
+  include_vars:
+   file: "staticAttributes.yml"
+  when: idp_stat_attrs is undefined or idp_stat_attrs == ""
+  tags: idp
+
+- name: "Include shibboleth identity provider variables"
+  include_vars: shib-idp-vars.yml
+  tags: idp
+
+- name: "Install Shibboleth IdP"
+  import_tasks: idp-install.yml
+  tags: idp
+
+- name: "Configure Shibboleth IdP"
+  import_tasks: idp-configure.yml
+  tags: idp
+
+- name: "Configure Styles and Languages of Shibboleth IdP"
+  import_tasks: idp-style-lang.yml
+  tags: idp
+
+- name: "Configure Shibboleth IdP /statistics application"
+  import_tasks: idp-statistics.yml
+  tags: idp
+
+- name: "Restore Shibboleth IdP if needed"
+  import_tasks: idp-restore.yml
+  tags: idp
+
+- name: "Configure Check_MK probes on Shibboleth IdP"
+  import_tasks: idp-check_mk-probes.yml
+  tags: idp
+
+- name: "Configure Rsyslog on Shibboleth IdP"
+  import_tasks: idp-rsyslog.yml
+  tags: idp

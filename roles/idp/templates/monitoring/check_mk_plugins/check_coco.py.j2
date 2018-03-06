@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+
+import xml.etree.cElementTree as ET
+
+import sys, getopt
+import optparse
+from subprocess import check_output
+import shlex
+import os
+from cStringIO import StringIO
+
+# PARAMETERS
+
+spEntityId  = "https://fake-coco.example.org/shibboleth"
+user        = "testuser"
+
+# END PARAMETERS
+
+parser = optparse.OptionParser()
+parser.add_option("-d", "--debug", dest="debug", action="store_true", help="Print debug information", default=False)
+parser.add_option("-e", "--entity", dest="spEntityId", help="Specify SP entityId", default=spEntityId)
+parser.add_option("-p", "--principal", dest="user", help="Username to be checked", default=user)
+(options, args) = parser.parse_args()
+
+if options.debug:
+    print "\nOptions passed to command:   %s" % options
+    print "\nArguments passed to command: %s" % args
+
+os.environ["JAVA_HOME"] = "/usr/lib/jvm/default-java/jre"
+result = check_output(shlex.split('/opt/shibboleth-idp/bin/aacli.sh --saml2 --principal '+ user +' --requester ' + spEntityId))
+
+if options.debug:
+   print "\n/opt/shibboleth-idp/bin/aacli.sh --saml2 --principal %s --requester %s" % (user,spEntityId)
+
+namespaces = {
+   'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion'
+}
+
+tree = ET.parse(StringIO(result))
+root = tree.getroot()
+attrs = root.findall("./saml2:AttributeStatement/saml2:Attribute", namespaces)
+
+coco_set = set(['eduPersonTargetedID','eduPersonScopedAffiliation','eduPersonPrincipalName','mail','displayName','givenName','sn','cn'])
+attrs_list = list()
+
+for samlAttr in attrs:
+   friendlyName = samlAttr.get('FriendlyName')
+   attrs_list.append(friendlyName)
+
+if options.debug:
+   print "\nAACLI Attribute List: "
+   print attrs_list
+   print "\nCOCO Attribute Set:"
+   print coco_set
+
+result = set(coco_set).issubset(attrs_list)
+
+if result and len(attrs_list) != 0:
+   print "0 check_coco - SUCCESS - IdP has retrieved metadata of Test COCO SP and is sending attributes to it"
+   sys.exit(0)
+else:
+   print "1 check_coco - CRITICAL - IdP doesn't send attributes to Test COCO SP"
+   sys.exit(1)

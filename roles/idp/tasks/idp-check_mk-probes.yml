@@ -1,0 +1,167 @@
+---
+# tasks file for IdP Check_MK probes
+- name: "Install needed packages for Check MK plugin"
+  apt:
+   name: "{{ item }}"
+   state: latest
+   update_cache: yes
+  with_items:
+   - "python-ldap"
+  when:
+   - check_mk is defined
+   - check_mk['srv'] is defined
+  tags: idp
+
+- name: "Create '/local' directory needed by Check_MK plugin for customized local probes"
+  file:
+   path: "/usr/lib/check_mk_agent/local"
+   owner: "root"
+   group: "root"
+   state: directory
+  when:
+   - check_mk is defined
+   - check_mk['srv'] is defined
+  tags: idp
+
+- name: "Put 'check_aacli' and 'check_mysql' probe in the Check_MK plugin '/local' directory"
+  template:
+   src: "{{ item['src'] }}"
+   dest: "{{ item['dest'] }}"
+   owner: "root"
+   group: "root"
+   mode: "0755"
+  with_items:
+   - { src: "monitoring/check_mk_plugins/check_aacli.py.j2", dest: "/usr/lib/check_mk_agent/local/check_aacli.py" }
+   - { src: "monitoring/check_mk_plugins/check_mysql.py.j2", dest: "/usr/lib/check_mk_agent/local/check_mysql.py" }
+  when:
+   - check_mk is defined
+   - check_mk['srv'] is defined
+  tags: idp
+
+- name: "Put 'check_ldap' probe in the Check_MK plugin '/local' directory"
+  template:
+   src: "monitoring/check_mk_plugins/check_ldap.py.j2"
+   dest: "/usr/lib/check_mk_agent/local/check_ldap.py"
+   owner: "root"
+   group: "root"
+   mode: "0755"
+  when:
+   - check_mk is defined
+   - check_mk['srv'] is defined
+   - ldap is defined
+   - ldap['create_test_user'] is defined
+   - ldap['create_test_user'] in ["Yes","yes","True","true"]
+  tags: idp
+
+- name: "Put 'check_rs' probe in the Check_MK plugin '/local' directory"
+  template:
+   src: "monitoring/check_mk_plugins/check_rs.py.j2"
+   dest: "/usr/lib/check_mk_agent/local/check_rs.py"
+   owner: "root"
+   group: "root"
+   mode: "0755"
+  when:
+   - check_mk is defined
+   - check_mk['srv'] is defined
+   - check_mk['check_rs'] is defined
+   - check_mk['check_rs'] in ["Yes","yes","True","true"]
+  tags: idp
+
+- name: "Add 'check_rs' probe to CheckMK for {{ fqdn }}"
+  uri:
+   url: "https://{{ check_mk['srv'] }}/{{ check_mk['site'] }}/check_mk/webapi.py?action=discover_services&_username={{ check_mk['api_user_name'] }}&_secret={{ check_mk['api_user_secret'] }}&mode=new&hostname={{ fqdn }}"
+   method: GET
+   timeout: 500
+   status_code: 200
+  when:
+   - check_mk is defined
+   - check_mk['check_idp'] is defined and check_mk['check_idp'] in ["True","true","Yes","yes"]
+   - check_mk['srv'] is defined and check_mk['srv'] != ''
+   - check_mk['site'] is defined and check_mk['site'] != ''
+   - check_mk['api_user_name'] is defined and check_mk['api_user_name'] != ''
+   - check_mk['api_user_secret'] is defined and check_mk['api_user_secret'] != ''
+   - check_mk['check_rs'] is defined and check_mk['check_rs'] in ["Yes","yes","True","true"]
+  tags: idp
+
+- name: "Remove fake RS SP probe from {{ fqdn }}"
+  file:
+   dest: "{{ item }}"
+   state: "absent"
+  with_items:
+   - "/usr/lib/check_mk_agent/local/check_rs.py"
+  when:
+   - check_mk is defined
+   - check_mk['srv'] is not defined or check_mk['check_rs'] is not defined or check_mk['check_rs'] in ["No","no","False","false"]
+  tags: idp
+
+- name: "Remove 'check_rs' probe from CheckMK for {{ fqdn }}"
+  uri:
+   url: "https://{{ check_mk['srv'] }}/{{ check_mk['site'] }}/check_mk/webapi.py?action=discover_services&_username={{ check_mk['api_user_name'] }}&_secret={{ check_mk['api_user_secret'] }}&mode=remove&hostname={{ fqdn }}"
+   method: GET
+   timeout: 500
+   status_code: 200
+  when:
+   - check_mk is defined
+   - check_mk['check_idp'] is defined and check_mk['check_idp'] in ["True","true","Yes","yes"]
+   - check_mk['srv'] is defined and check_mk['srv'] != ''
+   - check_mk['site'] is defined and check_mk['site'] != ''
+   - check_mk['api_user_name'] is defined and check_mk['api_user_name'] != ''
+   - check_mk['api_user_secret'] is defined and check_mk['api_user_secret'] != ''
+   - check_mk['check_rs'] is defined and check_mk['check_rs'] in ["No","no","False","false"] or check_mk['check_rs'] is not defined
+  tags: idp
+
+- name: "Put 'check_coco' probe in the Check_MK plugin '/local' directory"
+  template:
+   src: "monitoring/check_mk_plugins/check_coco.py.j2"
+   dest: "/usr/lib/check_mk_agent/local/check_coco.py"
+   owner: "root"
+   group: "root"
+   mode: "0755"
+  when:
+   - check_mk is defined
+   - check_mk['srv'] is defined
+   - check_mk['check_coco'] is defined
+   - check_mk['check_coco'] in ["Yes","yes","True","true"]
+  tags: idp
+
+- name: "Add 'check_coco' probe to CheckMK for {{ fqdn }}"
+  uri:
+   url: "https://{{ check_mk['srv'] }}/{{ check_mk['site'] }}/check_mk/webapi.py?action=discover_services&_username={{ check_mk['api_user_name'] }}&_secret={{ check_mk['api_user_secret'] }}&mode=new&hostname={{ fqdn }}"
+   method: GET
+   timeout: 500
+   status_code: 200
+  when:
+   - check_mk is defined
+   - check_mk['check_idp'] is defined and check_mk['check_idp'] in ["True","true","Yes","yes"]
+   - check_mk['srv'] is defined and check_mk['srv'] != ''
+   - check_mk['site'] is defined and check_mk['site'] != ''
+   - check_mk['api_user_name'] is defined and check_mk['api_user_name'] != ''
+   - check_mk['api_user_secret'] is defined and check_mk['api_user_secret'] != ''
+   - check_mk['check_coco'] is defined and check_mk['check_coco'] in ["Yes","yes","True","true"]
+  tags: idp
+
+- name: "Remove fake CoCo SP probe from {{ fqdn }}"
+  file:
+   dest: "{{ item }}"
+   state: "absent"
+  with_items:
+   - "/usr/lib/check_mk_agent/local/check_coco.py"
+  when:
+   - check_mk is defined
+   - check_mk['srv'] is not defined or check_mk['check_coco'] is not defined or check_mk['check_coco'] in ["No","no","False","false"]
+  tags: idp
+
+- name: "Remove 'check_coco' probe from CheckMK for {{ fqdn }}"
+  uri:
+   url: "https://{{ check_mk['srv'] }}/{{ check_mk['site'] }}/check_mk/webapi.py?action=discover_services&_username={{ check_mk['api_user_name'] }}&_secret={{ check_mk['api_user_secret'] }}&mode=remove&hostname={{ fqdn }}"
+   method: GET
+   timeout: 500
+   status_code: 200
+  when:
+   - check_mk is defined
+   - check_mk['check_idp'] is defined and check_mk['check_idp'] in ["True","true","Yes","yes"]
+   - check_mk['srv'] is defined and check_mk['srv'] != ''
+   - check_mk['site'] is defined and check_mk['site'] != ''
+   - check_mk['api_user_name'] is defined and check_mk['api_user_name'] != ''
+   - check_mk['api_user_secret'] is defined and check_mk['api_user_secret'] != ''
+   - check_mk['check_coco'] is defined and check_mk['check_rs'] in ["No","no","False","false"] or check_mk['check_coco'] is not defined

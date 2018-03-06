@@ -1,0 +1,113 @@
+---
+# tasks file for common
+- name: "Include OS-specific variables if custom ones are not already defined by host_vars"
+  include_vars: "{{ ansible_os_family }}.yml"
+  tags: common
+
+- name: "Configure the 'hosts' file with the FQDN provided"
+  template:
+   src: hosts.j2
+   dest: /etc/hosts
+   owner: "root"
+   group: "root"
+   mode: "0644" 
+  tags: common
+
+- name: "Comment out 'manage_etc_host' from /etc/cloud/cloud.cfg"
+  lineinfile:
+   dest: /etc/cloud/cloud.cfg
+   regexp: "manage_etc_hosts"
+   line: "#manage_etc_hosts"
+   state: present
+  tags: common
+
+- name: "Install needed common packages"
+  apt: 
+   name: "{{ item }}"
+   update_cache: yes
+   state: latest
+  with_items:
+   - ntp
+   - ntpdate
+   - vim
+   - ca-certificates
+   - openssl
+   - ssl-cert
+   - aptitude
+   - debconf
+   - debconf-utils
+   - apt-transport-https
+  tags: common
+
+- name: "Replace default mirror site with the preferred one"
+  replace:
+   dest: /etc/apt/sources.list
+   regexp: "http[:][/][/]http.debian.net[/]debian"
+   replace: "{{ mirror | default('https://mi.mirror.garr.it/mirrors/debian/') }}"
+  tags: common 
+
+- name: "Configure NTP service"
+  template: 
+   src: ntp.conf.j2
+   dest: /etc/ntp.conf
+  notify:
+    - "Restart ntp"
+  tags: common
+
+- name: "Start NTP service"
+  systemd:
+    name: ntp
+    daemon_reload: True
+    state: started
+    enabled: True
+  tags: common
+
+- name: "Set timezone variable"
+  template:
+   src: timezone.j2
+   dest: /etc/timezone
+   owner: "root"
+   group: "root"
+   mode: "0644"
+   backup: "yes"
+  notify:
+   - "Update Timezone"
+  tags: common
+
+- name: "Load SSL Certificate and SSL Key into '/etc/ssl' right directories"
+  copy:
+   src: "{{ item.src }}"
+   dest: "{{ item.dest }}"
+   owner: "{{ item.owner }}"
+   group: "{{ item.group }}"
+   mode: "{{ item.mode }}"
+  with_items:
+   - { src: "files/{{ fqdn }}/{{ common['ssl_cert'] }}", dest: "/etc/ssl/certs/ssl-cert.crt", owner: "root" , group: "ssl-cert" , mode: "0644"  }
+   - { src: "files/{{ fqdn }}/{{ common['ssl_key'] }}", dest: "/etc/ssl/private/ssl-cert.key", owner: "root" , group: "ssl-cert" , mode: "0440"  }
+  tags: common
+
+- name: "Ensure that the '/usr/local/share/ca-certificates' directory exists"
+  file: 
+   state: "directory"
+   path: "/usr/local/share/ca-certificates"
+  tags: common
+
+- name: "Check the existance of the CA"
+  stat:
+    path: "/etc/ssl/certs/cacert.pem"
+  register: cacert
+  tags: common
+
+- name: "Install CA Certificate"
+  copy: 
+   src: "files/{{ fqdn }}/{{ common['ca'] }}"
+   dest: "/usr/local/share/ca-certificates/cacert.crt"
+   owner: "root"
+   group: "root"
+   mode: "0644"
+  tags: common
+
+- name: "Update certificates index"
+  shell: "/usr/sbin/update-ca-certificates"
+  changed_when: false
+  tags: common

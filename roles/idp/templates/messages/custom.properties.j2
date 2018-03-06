@@ -1,0 +1,51 @@
+# Overridden default properties
+
+idp.logo={{ idp_metadata['en']['mdui_logo'] }}
+idp.logo.alt-text={{ idp_metadata['en']['org_displayName'] }}
+idp.footer={{ idp_login['footer']['en']['text'] }}
+idp.url.helpdesk=mailto:{{ idp_contacts['support']['mail'] }}
+bad-password.message = The password you entered is incorrect or the account is not active.
+idp.login.forgotPassword = Forgot password<br/>or Account activation
+idp.url.password.reset={{ idp_login['idp_url_password_reset'] }}
+
+# New custom properties
+idp.favicon={{ idp_metadata['en']['mdui_favicon'] }}
+idp.infopage=Informations
+idp.infoUrl={{ idp_metadata['en']['mdui_infoUrl'] }}
+idp.privacypage=Privacy Policy
+idp.privacyPage={{ idp_metadata['en']['mdui_privacyUrl'] }}
+idp.auppage=AUP Policy
+{% if idp_login['aup'] is defined %}
+idp.aupPage={{ idp_login['aup']['en']['aupUrl'] }}
+{% else %}
+idp.aupPage={{ idp_login_default['aup']['en']['aupUrl'] }}
+{% endif %}
+idp.login.moreinfo=Resource informations
+idp.login.goback=Go back to login page
+idp.description={{ idp_metadata['en']['mdui_description'] }}
+idp.organization=GARR
+idp.contacts={{ idp_contacts['support']['mail'] }}
+idp.nocontacts=No Contacts
+idp.noprivacy=No Privacy Policy
+idp.noinfopage=No Information Page
+sp.description=SP Description
+sp.organization=SP Organization
+sp.contacts=SP Contacts
+sp.nocontacts=SP Contacts absent
+sp.infopage=SP Information Page
+sp.noinfopage=SP Information Page absent
+sp.privacypage=SP Privacy Policy
+sp.noprivacypage=SP Privacy Policy absent
+{% for fed, value in idp_login['fed_info'].iteritems() %}
+{{ fed }}.url={{ idp_login['fed_info'][fed]['en']['url'] }}
+{{ fed }}.logo={{ idp_login['fed_info'][fed]['en']['logo'] }}
+{{ fed }}.name={{ idp_login['fed_info'][fed]['en']['name'] }}
+{% endfor %}
+
+# Messages for changing password
+{% if idp_config['ldap']['ppolicy'] is defined and idp_config['ldap']['ppolicy']['change_password_url'] is defined and idp_config['ldap']['ppolicy']['change_password_url'] != "" %}
+ChangePassword=change-password
+change-password.message=Change your password!
+change-password.linkText=Click Here
+change-password.url={{ idp_config['ldap']['ppolicy']['change_password_url'] }}
+{% endif %}

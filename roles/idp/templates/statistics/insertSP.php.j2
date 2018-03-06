@@ -1,0 +1,40 @@
+<?php
+include "SProvider.conf.php";
+include "SProvider.metadata.php";
+
+$db = mysqli_connect("localhost", "statistics", "{{ idp_stats['db_pw'] }}", "statistics");
+
+if (!$db){
+ die("Unable to connect to database 'statistics'");
+}
+
+$sps = array();
+foreach ($SProviders as $key=>$value) {
+        $sps[$key] = $value['Name'];
+}
+foreach ($metadataSProviders as $key=>$value) {
+        if (!array_key_exists(trim($key), $sps)) $sps[trim($key)] = trim($value['Name']);
+}
+
+mysqli_query($db, "SET AUTOCOMMIT=0");
+mysqli_query($db, "START TRANSACTION");
+mysqli_query($db, "DELETE FROM sps");
+
+$count = 0;
+foreach ($sps as $key=>$value) {
+        $query = "INSERT INTO sps VALUES ('".$key."', '".$value."')";
+        mysqli_query($db, $query);
+        /*
+        if (!$result) {
+                print "Error in updating SP database.\n";
+                mysql_query("ROLLBACK");
+                exit(1);
+        }
+        */
+        $count++;
+}
+
+mysqli_query($db, "COMMIT");
+mysqli_close($db);
+print "Update OK, inserted $count SPs.\n";
+?>

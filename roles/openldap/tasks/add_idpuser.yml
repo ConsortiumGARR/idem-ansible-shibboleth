@@ -1,0 +1,11 @@
+---
+
+- ldap_entry:
+    dn: "{{ idp_config['ldap']['bindDN'] }}"
+    objectClass:
+      - inetOrgPerson
+    attributes:
+      cn: "idpuser"
+      sn: "idpuser"
+      givenName: "idpuser"
+      userPassword: "{{ idp_config['ldap']['bindDNCredential'] }}"
