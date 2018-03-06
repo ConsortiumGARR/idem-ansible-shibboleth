@@ -3,7 +3,7 @@
 ## Requirements
 
 * [Ansible](https://www.ansible.com/) - Tested with Ansible v2.3.1.0
-* [Shibboleth IdP source](https://shibboleth.net/downloads/identity-provider/latest/)
+* [Shibboleth IdP source](https://shibboleth.net/downloads/identity-provider/3.3.1/shibboleth-identity-provider-3.3.1.tar.gz)
 
 ## Simple flow to install and configure a Shibboleth IdP
 
@@ -25,7 +25,7 @@
 
 5. Download the Identity Provider source:
     * ```cd /usr/local/src ```
-    * ```wget https://shibboleth.net/downloads/identity-provider/latest/shibboleth-identity-provider-3.3.1.tar.gz```
+    * ```wget https://shibboleth.net/downloads/identity-provider/3.3.1/shibboleth-identity-provider-3.3.1.tar.gz```
     * ```tar xzf /usr/local/src/shibboleth-identity-provider-3.3.1.tar.gz```
     * ```rm -f /usr/local/src/shibboleth-identity-provider-3.3.1.tar.gz```
 
